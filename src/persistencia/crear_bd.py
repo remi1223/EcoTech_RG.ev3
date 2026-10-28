@@ -115,6 +115,14 @@ def crear_tablas():
                     FOREIGN KEY (proyecto_id) REFERENCES proyecto(id),
                     FOREIGN KEY (empleado_id) REFERENCES empleado(id)
                 )"""
+
+                """CREATE TABLE IF NOT EXISTS usuario (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre_usuario TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    id_empleado INTEGER NOT NULL UNIQUE,
+                    FOREIGN KEY (id_empleado) REFERENCES empleado(id)
+                );"""
             ]
         for sql in tablas:
             cursor.execute(sql)
