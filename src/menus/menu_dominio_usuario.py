@@ -5,21 +5,14 @@ from dominio.usuario import Usuario
 from persistencia.empleado_dao import EmpleadoDAO
 
 
-def buscar_usuario(usuarios, id_usuario):
-    for usuario in usuarios:
-        if usuario._id_usuario == id_usuario:
-            return usuario
-    return None
-
-
-def menu_dominio_usuario(usuarios):
+def menu_dominio_usuario(usuario_dao):
     while True:
         limpiar_pantalla()
-        print("\n===== DOMINIO USUARIO (DEMOSTRACION) =====")
+        print("\n===== DOMINIO USUARIO =====")
         print("1. Crear usuario para un empleado")
         print("2. Autenticar usuario")
         print("3. Cambiar contrasena")
-        print("4. Listar usuarios de la demostracion")
+        print("4. Listar usuarios")
         print("0. Volver al menu principal")
 
         opcion = input("Seleccione una opcion: ").strip()
@@ -31,18 +24,10 @@ def menu_dominio_usuario(usuarios):
         elif opcion == "1":
             try:
                 id_empleado = int(input("ID del empleado existente: "))
+                
                 empleado = EmpleadoDAO.buscar_por_id(id_empleado)
                 if empleado is None:
                     print("Empleado no encontrado. Registrelo primero en el CRUD.")
-                    input("\nPresione Enter para continuar...")
-                    continue
-
-                repetido = False
-                for actual in usuarios:
-                    if actual._empleado._id == id_empleado:
-                        repetido = True
-                if repetido:
-                    print("Este empleado ya tiene un usuario en la demostracion.")
                     input("\nPresione Enter para continuar...")
                     continue
 
@@ -53,79 +38,77 @@ def menu_dominio_usuario(usuarios):
                     input("\nPresione Enter para continuar...")
                     continue
 
-                contrasenia = getpass("Contrasena (minimo 8 caracteres): ")
-                if len(contrasenia) < 8:
-                    print("La contrasena debe tener al menos 8 caracteres.")
+                contrasenia = getpass(f"Contrasena (minimo {Usuario.MIN_CLAVE} caracteres): ")
+                if len(contrasenia) < Usuario.MIN_CLAVE:
+                    print(f"La contrasena debe tener al menos {Usuario.MIN_CLAVE} caracteres.")
                     input("\nPresione Enter para continuar...")
                     continue
 
-                existe_mail = False
-                for actual in usuarios:
-                    if actual._mail.lower() == mail.lower():
-                        existe_mail = True
-                if existe_mail:
-                    print("Ya existe un usuario con ese correo.")
-                    input("\nPresione Enter para continuar...")
-                    continue
-
-                usuario = Usuario(
-                    nombre=nombre,
+                nuevo_usuario = Usuario(
+                    nombre_usuario=nombre,
                     mail=mail,
                     contrasenia=contrasenia,
-                    empleado=empleado,
-                    id_usuario=len(usuarios) + 1
+                    id_empleado=empleado._id
                 )
 
-                if len(usuarios) == 0:
-                    usuario._permisos.append("administrar_permisos")
-                    print("Primer usuario: administrador de demostracion.")
+                todos = usuario_dao.obtener_todos()
+                if len(todos) == 0:
+                    nuevo_usuario._permisos.append("administrar_permisos")
+                    print("Primer usuario: asignado como administrador.")
 
-                usuarios.append(usuario)
-                print("Usuario creado. ID:", usuario._id_usuario)
-                print("Nota: se conserva solo mientras el programa este abierto.")
+                id_generado = usuario_dao.crear(nuevo_usuario)
+                
+                if id_generado:
+                    print(f"Usuario guardado en la base de datos con éxito. ID asignado: {id_generado}")
+                else:
+                    print("No se pudo crear el usuario. Verifique si el nombre de usuario o el empleado ya están registrados.")
 
-            except ValueError:
-                print("El ID del empleado debe ser un numero.")
+            except ValueError as ve:
+                print("Error en los datos ingresados:", ve)
             except Exception as error:
-                print("Error al crear usuario:", error)
+                print("Error inesperado al crear usuario:", error)
 
         elif opcion in ("2", "3"):
             try:
                 id_usuario = int(input("ID del usuario: "))
-                usuario = buscar_usuario(usuarios, id_usuario)
+                usuario = usuario_dao.obtener_por_id(id_usuario)
+                
                 if usuario is None:
                     print("Usuario no encontrado.")
                     input("\nPresione Enter para continuar...")
                     continue
 
-                contrasenia = getpass("Contrasena actual: ")
+                contrasenia_actual = getpass("Contrasena actual: ")
 
                 if opcion == "2":
-                    if usuario.autenticar(contrasenia):
+                    if usuario.autenticar(contrasenia_actual):
                         print("Autenticacion correcta.")
                     else:
                         print("Contrasena incorrecta.")
 
                 elif opcion == "3":
-                    nueva = getpass("Nueva contrasena: ")
-                    if usuario.cambiar_contrasenia(contrasenia, nueva):
-                        print("Contrasena cambiada correctamente.")
+                    nueva_clave = getpass("Nueva contrasena: ")
+                    
+                    if usuario.cambiar_contrasenia(contrasenia_actual, nueva_clave):
+                        if usuario_dao.actualizar(usuario):
+                            print("Contrasena actualizada correctamente en la base de datos.")
+                        else:
+                            print("Error al guardar la nueva contrasena en la base de datos.")
                     else:
-                        print("No se pudo cambiar la contrasena.")
+                        print("No se pudo cambiar la contrasena. Verifique que coincida con la actual y cumpla la longitud minima.")
 
             except ValueError:
-                print("El ID del usuario debe ser un numero.")
+                print("El ID debe ser un entero positivo.")
 
         elif opcion == "4":
+            usuarios = usuario_dao.obtener_todos()
             if not usuarios:
-                print("Aun no hay usuarios en esta prueba.")
+                print("Aun no hay usuarios registrados en la base de datos.")
             else:
-                for usuario in usuarios:
+                for u in usuarios:
+                    permisos_str = ", ".join(u.permisos) if u.permisos else "Sin permisos"
                     print(
-                        "ID:", usuario._id_usuario,
-                        "| Nombre:", usuario._nombre,
-                        "| Empleado:", usuario._empleado._id,
-                        "| Permisos:", ", ".join(usuario._permisos) or "Sin permisos"
+                        f"ID: {u.id_usuario} | Usuario: {u.nombre_usuario} | Mail: {u._mail} | ID Empleado: {u._empleado} | Permisos: {permisos_str}"
                     )
 
         else:

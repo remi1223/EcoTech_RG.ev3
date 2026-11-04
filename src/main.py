@@ -1,6 +1,7 @@
 from dominio.Gestion_departamento import GestionDepartamento
 from dominio.gestionPermisos import GestionPermisos
 from persistencia.crear_bd import crear_tablas
+from persistencia.usuario_dao import UsuarioDAO
 from menus.menu_dominio_empleado import menu_dominio_empleado
 from menus.menu_dominio_departamento import menu_dominio_departamento
 from menus.menu_dominio_proyecto import menu_dominio_proyecto
@@ -11,7 +12,7 @@ from menus.menu_dominio_gestionDepartamento import menu_dominio_gestionDepartame
 from complementos.complementos import limpiar_pantalla
 
 def main():
-    usuarios = []
+    usuario_dao = UsuarioDAO("ecotech.db")
     gestion_permisos = GestionPermisos()
     gestion_departamentos = GestionDepartamento()
 
@@ -43,10 +44,10 @@ def main():
             menu_dominio_registro_tiempo()
         elif opcion == "5":
             limpiar_pantalla()
-            menu_dominio_usuario(usuarios)
+            menu_dominio_usuario(usuario_dao)
         elif opcion == "6":
             limpiar_pantalla()
-            menu_dominio_gestionPermisos(usuarios, gestion_permisos)
+            menu_dominio_gestionPermisos(usuario_dao, gestion_permisos)
         elif opcion == "7":
             limpiar_pantalla()
             menu_dominio_gestionDepartamento(gestion_departamentos)

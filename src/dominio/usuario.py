@@ -2,20 +2,22 @@ import hashlib
 import hmac
 import secrets
 
-
 class Usuario:
     MIN_USUARIO = 3
     MAX_USUARIO = 40
     MIN_CLAVE = 6
 
-    def __init__(self, nombre_usuario, mail, contrasenia, empleado, id_usuario=None):
+    def __init__(self, nombre_usuario, mail, contrasenia, id_empleado, id_usuario=None):
         if id_usuario is not None and (not isinstance(id_usuario, int) or id_usuario <= 0):
             raise ValueError("El ID del usuario debe ser un entero positivo.")
+        
+        if not isinstance(id_empleado, int) or id_empleado <= 0:
+            raise ValueError("El ID del empleado debe ser un entero positivo.")
         
         self._id_usuario = id_usuario
         self._nombre_usuario = self.normalizar_usuario(nombre_usuario)
         self._mail = mail
-        self._empleado = empleado
+        self._empleado = id_empleado
         self._permisos = []
         self._contrasenia_hash = self._crear_hash(contrasenia)
 
