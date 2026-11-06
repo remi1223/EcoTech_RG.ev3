@@ -1,15 +1,18 @@
+from complementos.complementos import limpiar_pantalla
 from dominio.Gestion_departamento import GestionDepartamento
 from dominio.gestionPermisos import GestionPermisos
-from persistencia.crear_bd import crear_tablas
-from persistencia.UsuarioDAO import UsuarioDAO
-from menus.menu_dominio_empleado import mostrar_menu_empleado
+
 from menus.menu_dominio_departamento import menu_dominio_departamento
-from menus.menu_dominio_proyecto import mostrar_menu_proyecto
+from menus.menu_dominio_empleado import main_empleado
+from menus.menu_dominio_gestionDepartamento import (
+    menu_dominio_gestionDepartamento,
+)
+from menus.menu_dominio_gestionPermisos import menu_dominio_gestionPermisos
+from menus.menu_dominio_proyecto import main_proyecto
 from menus.menu_dominio_registroTiempo import menu_dominio_registro_tiempo
 from menus.menu_dominio_usuario import menu_dominio_usuario
-from menus.menu_dominio_gestionPermisos import menu_dominio_gestionPermisos
-from menus.menu_dominio_gestionDepartamento import menu_dominio_gestionDepartamento
-from complementos.complementos import limpiar_pantalla
+from persistencia.crear_bd import crear_tablas
+from persistencia.UsuarioDAO import UsuarioDAO
 
 
 def main():
@@ -34,13 +37,13 @@ def main():
         try:
             if opcion == "1":
                 limpiar_pantalla()
-                mostrar_menu_empleado()
+                main_empleado()  
             elif opcion == "2":
                 limpiar_pantalla()
                 menu_dominio_departamento()
             elif opcion == "3":
                 limpiar_pantalla()
-                mostrar_menu_proyecto()
+                main_proyecto()  
             elif opcion == "4":
                 limpiar_pantalla()
                 menu_dominio_registro_tiempo()
