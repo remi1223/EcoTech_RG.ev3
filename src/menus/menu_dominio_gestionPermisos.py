@@ -1,10 +1,9 @@
 from complementos.complementos import limpiar_pantalla
 from getpass import getpass
+from persistencia.UsuarioDAO import UsuarioDAO
 
-from menus.menu_dominio_usuario import buscar_usuario
 
-
-def menu_dominio_gestionPermisos(usuarios, gestion_permisos):
+def menu_dominio_gestionPermisos(dao_usuario: UsuarioDAO, gestion_permisos):
     while True:
         limpiar_pantalla()
         print("\n===== DOMINIO GESTION PERMISOS (DEMOSTRACION) =====")
@@ -19,25 +18,21 @@ def menu_dominio_gestionPermisos(usuarios, gestion_permisos):
             return
 
         elif opcion == "1":
+            usuarios = dao_usuario.obtener_todos()
             if not usuarios:
-                print("No hay usuarios. Cree uno desde el menu Usuario.")
+                print("No hay usuarios registrados en la BD.")
             else:
                 for usuario in usuarios:
+                    nombre = getattr(usuario, "_nombre_usuario", "Sin nombre")
+                    permisos = getattr(usuario, "_permisos", [])
                     print(
-                        "ID:", usuario._id_usuario,
-                        "| Usuario:", usuario._nombre,
-                        "| Permisos:", ", ".join(usuario._permisos) or "Sin permisos"
+                        f"ID: {usuario._id_usuario} | Usuario: {nombre} | Permisos: {', '.join(permisos) or 'Sin permisos'}"
                     )
 
         elif opcion == "2":
-            if not usuarios:
-                print("Primero debe crear usuarios desde el menu Usuario.")
-                input("\nPresione Enter para continuar...")
-                continue
-
             try:
                 id_encargado = int(input("ID del usuario encargado: "))
-                encargado = buscar_usuario(usuarios, id_encargado)
+                encargado = dao_usuario.obtener_por_id(id_encargado)
                 if encargado is None:
                     print("Encargado no encontrado.")
                     input("\nPresione Enter para continuar...")
@@ -49,18 +44,24 @@ def menu_dominio_gestionPermisos(usuarios, gestion_permisos):
                     input("\nPresione Enter para continuar...")
                     continue
 
-                id_usuario = int(input("ID del usuario que recibira el permiso: "))
-                usuario = buscar_usuario(usuarios, id_usuario)
+                id_usuario = int(
+                    input("ID del usuario que recibira el permiso: ")
+                )
+                usuario = dao_usuario.obtener_por_id(id_usuario)
                 if usuario is None:
                     print("Usuario destinatario no encontrado.")
                     input("\nPresione Enter para continuar...")
                     continue
 
                 permiso = input("Nombre del permiso: ").strip()
-                if gestion_permisos.otorgar_permiso(encargado, usuario, permiso):
+                if gestion_permisos.otorgar_permiso(
+                    encargado, usuario, permiso
+                ):
                     print("Permiso otorgado correctamente.")
                 else:
-                    print("No se pudo otorgar: encargado sin autorizacion, permiso vacio o repetido.")
+                    print(
+                        "No se pudo otorgar: encargado sin autorizacion, permiso vacio o repetido."
+                    )
 
             except ValueError:
                 print("Los ID deben ser numericos.")
