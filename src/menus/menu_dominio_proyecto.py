@@ -1,115 +1,114 @@
-from complementos.complementos import limpiar_pantalla
+from complementos.complementos import (limpiar_pantalla, validar_texto_longitud, validar_fecha_YYYY_MM_DD, validar_entero_positivo)
 from datetime import date
-from dominio.registroTiempo import RegistroTiempo
+from dominio.proyecto import Proyecto
 from persistencia.proyecto_dao import ProyectoDao
-from persistencia.empleado_dao import EmpleadoDAO
-from persistencia.registroTiempo_dao import RegistroTiempoDAO
-from menus.menu_proyecto import main_proyecto
+from entradas import pedir_dato
 
 
-def menu_dominio_proyecto():
+def mostrar_menu_proyecto():
+    print("\n===== PROYECTOS - ECOTECH =====")
+    print("1. Registrar Proyecto")
+    print("2. Listar Proyectos")
+    print("3. Buscar Proyecto")
+    print("4. Actualizar Proyecto")
+    print("5. Eliminar Proyecto")
+    print("0. Volver al menu principal")
+
+
+def main_proyecto():
     while True:
         limpiar_pantalla()
-        print("\n===== DOMINIO PROYECTO =====")
-        print("1. Asignar empleado al proyecto")
-        print("2. Desvincular empleado del proyecto")
-        print("3. Registrar horas de un empleado asignado")
-        print("4. Generar informe del proyecto")
-        print("5. Gestionar proyectos (CRUD)")
-        print("0. Volver al menu principal")
-
-        opcion = input("Seleccione una opcion: ")
+        mostrar_menu_proyecto()
+        opcion = input("Seleccione una opcion: ").strip()
         limpiar_pantalla()
-        if opcion == "0":
-            return
-        if opcion == "5":
-            main_proyecto()
-            continue
-        if opcion not in ("1", "2", "3", "4"):
-            print("Opcion no valida.")
-            input("\nPresione Enter para continuar...")
-            continue
 
-        try:
-            id_proyecto = int(input("ID del proyecto: "))
-            proyecto = ProyectoDao.buscar_por_id(id_proyecto)
-            if proyecto is None:
-                print("Proyecto no encontrado.")
-                input("\nPresione Enter para continuar...")
-                continue
+        if opcion == "1":
+            try:
+                nombre = pedir_dato("Nombre del proyecto (máx 60 caracteres): ", lambda v: validar_texto_longitud(v, 60, "Nombre"))
+                fecha_str = pedir_dato("Fecha de inicio (YYYY-MM-DD): ", validar_fecha_YYYY_MM_DD)
+                fecha_inicio = date.fromisoformat(fecha_str)
+                descripcion = pedir_dato("Descripción (máx 200 caracteres): ", lambda v: validar_texto_longitud(v, 200, "Descripción"))
 
-            if opcion == "4":
-                print("\n--- INFORME DEL PROYECTO ---")
-                print(proyecto.generar_informe())
-                input("\nPresione Enter para continuar...")
-                continue
+                proyecto = Proyecto(nombre, fecha_inicio, descripcion)
+                ProyectoDao.insertar(proyecto)
+                print(f"\nProyecto registrado con ID: {proyecto._id_proyecto}")
+            except Exception as error:
+                print("\nError al registrar proyecto:", error)
 
-            id_empleado = int(input("ID del empleado: "))
-            empleado = EmpleadoDAO.buscar_por_id(id_empleado)
-            if empleado is None:
-                print("Empleado no encontrado.")
-                input("\nPresione Enter para continuar...")
-                continue
-
-            empleado_asignado = None
-            for actual in proyecto._empleados:
-                if actual._id == empleado._id:
-                    empleado_asignado = actual
-                    break
-
-            if opcion == "1":
-                if empleado_asignado is not None:
-                    print("El empleado ya esta asignado al proyecto.")
-                elif proyecto.asignar_empleado(empleado):
-                    if ProyectoDao.asignar_empleado(proyecto, empleado):
-                        print("Empleado asignado y guardado.")
-                    else:
-                        print("No se pudo guardar la asignacion.")
-
-            elif opcion == "2":
-                if empleado_asignado is None:
-                    print("El empleado no esta asignado a este proyecto.")
-                elif proyecto.desvincular_empleado(empleado_asignado):
-                    if ProyectoDao.desvincular_empleado(proyecto, empleado_asignado):
-                        print("Empleado desvinculado del proyecto.")
-                    else:
-                        print("No se pudo guardar la desvinculacion.")
-
-            elif opcion == "3":
-                if empleado_asignado is None:
-                    print("Primero debes asignar al empleado al proyecto.")
-                    input("\nPresione Enter para continuar...")
-                    continue
-                horas = int(input("Horas trabajadas: "))
-                if horas <= 0:
-                    print("Las horas deben ser mayores que cero.")
-                    input("\nPresione Enter para continuar...")
-                    continue
-                fecha = date.fromisoformat(
-                    input("Fecha trabajada (AAAA-MM-DD): ").strip()
-                )
-                descripcion = input("Descripcion de la tarea: ").strip()
-                if not descripcion:
-                    print("La descripcion no puede quedar vacia.")
-                    input("\nPresione Enter para continuar...")
-                    continue
-                registro = RegistroTiempo(
-                    horas_trabajadas=horas,
-                    fecha_trabajada=fecha,
-                    descripcion_tarea=descripcion,
-                    empleado=empleado_asignado,
-                    proyecto=proyecto
-                )
-                if proyecto.agregar_registro_tiempo(registro):
-                    if RegistroTiempoDAO.insertar(registro):
-                        print("Horas guardadas con ID:", registro._id_registro)
-                    else:
-                        print("No se pudo guardar el registro.")
+        elif opcion == "2":
+            try:
+                proyectos = ProyectoDao.listar()
+                if not proyectos:
+                    print("No hay proyectos registrados.")
                 else:
-                    print("No se pudo registrar tiempo en el proyecto.")
+                    for p in proyectos:
+                        print(f"ID: {p._id_proyecto} | {p._nombre} | Inicio: {p._fecha_inicio} | {p._descripcion}")
+            except Exception as error:
+                print("Error al listar proyectos:", error)
 
-        except ValueError as error:
-            print("Datos incorrectos:", error)
-        except Exception as error:
-            print("Ocurrio un error:", error)
+        elif opcion == "3":
+            try:
+                id_proyecto = pedir_dato("ID del proyecto: ", lambda v: validar_entero_positivo(v, "ID Proyecto"))
+                p = ProyectoDao.buscar_por_id(id_proyecto)
+                if p is None:
+                    print("Proyecto no encontrado.")
+                else:
+                    print(f"ID: {p._id_proyecto} | {p._nombre} | Inicio: {p._fecha_inicio} | {p._descripcion}")
+            except Exception as error:
+                print("Error al buscar proyecto:", error)
+
+        elif opcion == "4":
+            try:
+                id_proyecto = pedir_dato("ID del proyecto a actualizar: ", lambda v: validar_entero_positivo(v, "ID Proyecto"))
+                p = ProyectoDao.buscar_por_id(id_proyecto)
+                if p is None:
+                    print("Proyecto no encontrado.")
+                    input("\nPresione Enter para continuar...")
+                    continue
+
+                nom_in = input(f"Nombre [{p._nombre}]: ").strip()
+                nombre = validar_texto_longitud(nom_in, 60, "Nombre") if nom_in else p._nombre
+
+                fec_in = input(f"Fecha de inicio [{p._fecha_inicio}] (YYYY-MM-DD): ").strip()
+                fecha = date.fromisoformat(validar_fecha_YYYY_MM_DD(fec_in)) if fec_in else p._fecha_inicio
+
+                desc_in = input(f"Descripción [{p._descripcion}]: ").strip()
+                descripcion = validar_texto_longitud(desc_in, 200, "Descripción") if desc_in else p._descripcion
+
+                actualizado = Proyecto(
+                    nombre=nombre,
+                    fecha_inicio=fecha,
+                    descripcion=descripcion,
+                    id_proyecto=p._id_proyecto
+                )
+                if ProyectoDao.actualizar(actualizado):
+                    print("\nProyecto actualizado correctamente.")
+                else:
+                    print("\nNo se detectaron cambios guardados.")
+            except Exception as error:
+                print("\nError al actualizar proyecto:", error)
+
+        elif opcion == "5":
+            try:
+                id_proyecto = pedir_dato("ID del proyecto a eliminar: ", lambda v: validar_entero_positivo(v, "ID Proyecto"))
+                p = ProyectoDao.buscar_por_id(id_proyecto)
+                if p is None:
+                    print("Proyecto no encontrado.")
+                    input("\nPresione Enter para continuar...")
+                    continue
+                confirmar = input(f"¿Eliminar {p._nombre}? (s/n): ").strip().lower()
+                if confirmar == "s":
+                    if ProyectoDao.eliminar(id_proyecto):
+                        print("Proyecto eliminado.")
+                    else:
+                        print("No se pudo eliminar el proyecto.")
+                else:
+                    print("Eliminación cancelada.")
+            except Exception as error:
+                print("Error al eliminar proyecto:", error)
+
+        elif opcion == "0":
+            return
+        else:
+            print("Opción no válida.")
         input("\nPresione Enter para continuar...")

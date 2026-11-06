@@ -1,147 +1,143 @@
 from datetime import date
-from complementos.complementos import limpiar_pantalla
-from dominio.registroTiempo import RegistroTiempo
+from dominio.empleado import Empleado
 from persistencia.empleado_dao import EmpleadoDAO
-from persistencia.proyecto_dao import ProyectoDao
-from persistencia.registroTiempo_dao import RegistroTiempoDAO
-from menus.menu_empleado import main_empleado
+from complementos.complementos import (limpiar_pantalla, validar_nombre, validar_texto_longitud, validar_telefono, 
+validar_correo, validar_salario, validar_fecha_YYYY_MM_DD, validar_entero_positivo)
+from entradas import pedir_dato
 
 
-def menu_dominio_empleado():
+def mostrar_menu_empleado():
+    print("\n===== EMPLEADOS - ECOTECH =====")
+    print("1. Registrar Empleado")
+    print("2. Listar Empleados")
+    print("3. Buscar Empleado")
+    print("4. Actualizar Empleado")
+    print("5. Eliminar Empleado")
+    print("0. Volver al menu principal")
+
+
+def main_empleado():
     while True:
-        print("\n===== DOMINIO EMPLEADO =====")
-        print("1. Mostrar datos de un empleado")
-        print("2. Ver salario de un empleado")
-        print("3. Registrar horas de trabajo")
-        print("4. Ver registros de horas de un empleado")
-        print("5. Gestionar empleados (CRUD)")
-        print("0. Volver al menu principal")
+        limpiar_pantalla()
+        mostrar_menu_empleado()
+        opcion = input("Seleccione una opcion: ").strip()
+        limpiar_pantalla()
 
-        opcion = input("Seleccione una opcion: ")
-
-        if opcion == "0":
-            
-            limpiar_pantalla()
-            return
-
-        elif opcion == "5":
-            limpiar_pantalla()
-            main_empleado()
-
-        elif opcion in ("1", "2", "3", "4"):
+        if opcion == "1":
             try:
-                limpiar_pantalla()
-                id_empleado = int(input("ID del empleado: "))
-                empleado = EmpleadoDAO.buscar_por_id(id_empleado)
+                nombre = pedir_dato("Nombre (máx 50 caracteres): ", lambda v: validar_nombre(v, 50))
+                direccion = pedir_dato("Dirección (máx 100 caracteres): ", lambda v: validar_texto_longitud(v, 100, "Dirección"))
+                numero = pedir_dato("Número de teléfono (ej. +56912345678): ", validar_telefono)
+                correo = pedir_dato("Correo electrónico (máx 80 caracteres): ", lambda v: validar_correo(v, 80))
+                
+                fecha_str = pedir_dato("Fecha de contrato (YYYY-MM-DD): ", validar_fecha_YYYY_MM_DD)
+                fecha_contrato = date.fromisoformat(fecha_str)
+                
+                salario = pedir_dato("Salario: ", validar_salario)
+                cargo = pedir_dato("Cargo (máx 40 caracteres): ", lambda v: validar_texto_longitud(v, 40, "Cargo"))
 
+                empleado = Empleado(nombre, direccion, numero, correo, fecha_contrato, salario, cargo)
+                EmpleadoDAO.insertar(empleado)
+                print(f"\nEmpleado registrado exitosamente con ID: {empleado._id}")
+            except Exception as error:
+                print("\nError al registrar el empleado:", error)
+
+        elif opcion == "2":
+            try:
+                empleados = EmpleadoDAO.listar()
+                if not empleados:
+                    print("No hay empleados registrados.")
+                else:
+                    for empleado in empleados:
+                        print(empleado.mostrar_datos())
+            except Exception as error:
+                print("Error al listar empleados:", error)
+
+        elif opcion == "3":
+            try:
+                id_empleado = pedir_dato("ID del empleado: ", lambda v: validar_entero_positivo(v, "ID Empleado"))
+                empleado = EmpleadoDAO.buscar_por_id(id_empleado)
                 if empleado is None:
                     print("Empleado no encontrado.")
-                    input("Presione Enter para continuar...")
-                    limpiar_pantalla()
-                    continue
-
-                if opcion == "1":
+                else:
                     print(empleado.mostrar_datos())
-                    print("Telefono:", empleado._numero)
+                    print("Teléfono:", empleado._numero)
                     print("Fecha de contrato:", empleado._fecha_contrato)
-                    input("Presione Enter para continuar...")
-                    limpiar_pantalla()
-
-                elif opcion == "2":
                     print("Salario:", empleado.ver_salario())
-                    input("Presione Enter para continuar...")
-                    limpiar_pantalla()
-
-                elif opcion == "3":
-                    id_proyecto = int(input("ID del proyecto: "))
-                    proyecto = ProyectoDao.buscar_por_id(id_proyecto)
-
-                    if proyecto is None:
-                        print("Proyecto no encontrado.")
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-                        continue
-
-                    if not RegistroTiempoDAO.empleado_asignado(empleado._id, proyecto._id_proyecto):
-                        print("El empleado no esta asignado a ese proyecto.")
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-                        continue
-
-                    horas = int(input("Horas trabajadas: "))
-                    if horas <= 0:
-                        print("Las horas deben ser mayores que cero.")
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-                        continue
-
-                    fecha = date.fromisoformat(
-                        input("Fecha trabajada (AAAA-MM-DD): ").strip()
-                    )
-                    descripcion = input("Descripcion de la tarea: ").strip()
-                    if descripcion == "":
-                        print("La descripcion no puede quedar vacia.")
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-                        continue
-
-                    registro = RegistroTiempo(
-                        horas_trabajadas=horas,
-                        fecha_trabajada=fecha,
-                        descripcion_tarea=descripcion,
-                        empleado=empleado,
-                        proyecto=proyecto
-                    )
-                    empleado.registrar_horas(registro)
-
-                    guardado = RegistroTiempoDAO.insertar(registro)
-                    if guardado:
-                        print("Horas registradas correctamente.")
-                        print("ID del registro:", registro._id_registro)
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-                    else:
-                        print("No se pudieron guardar las horas.")
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-
-                elif opcion == "4":
-                    registros = RegistroTiempoDAO.listar()
-                    encontrados = False
-                    total_horas = 0
-
-                    for registro in registros:
-                        if registro._empleado._id == empleado._id:
-                            encontrados = True
-                            total_horas += registro._horas_trabajadas
-                            print(
-                                "Registro:", registro._id_registro,
-                                "| Fecha:", registro._fecha_trabajada,
-                                "| Horas:", registro._horas_trabajadas,
-                                "| Proyecto:", registro._proyecto._nombre,
-                                "| Tarea:", registro._descripcion_tarea
-                            )
-
-
-                    if encontrados:
-                        print("Total de horas registradas:", total_horas)
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-                    else:
-                        print("Este empleado no tiene horas registradas.")
-                        input("Presione Enter para continuar...")
-                        limpiar_pantalla()
-
-            except ValueError as error:
-                print("Datos incorrectos:", error)
-                input("Presione Enter para continuar...")
-                limpiar_pantalla()
             except Exception as error:
-                print("Ocurrio un error:", error)
-                input("Presione Enter para continuar...")
-                limpiar_pantalla()
+                print("Error al buscar el empleado:", error)
 
+        elif opcion == "4":
+            try:
+                id_empleado = pedir_dato("ID del empleado a actualizar: ", lambda v: validar_entero_positivo(v, "ID Empleado"))
+                empleado = EmpleadoDAO.buscar_por_id(id_empleado)
+                if empleado is None:
+                    print("Empleado no encontrado.")
+                    input("\nPresione Enter para continuar...")
+                    continue
+                
+                print("Deja el campo vacío si no quieres modificarlo.")
+                
+                nom_in = input(f"Nombre [{empleado._nombre}]: ").strip()
+                nombre = validar_nombre(nom_in, 50) if nom_in else empleado._nombre
+                
+                dir_in = input(f"Dirección [{empleado._direccion}]: ").strip()
+                direccion = validar_texto_longitud(dir_in, 100, "Dirección") if dir_in else empleado._direccion
+                
+                num_in = input(f"Teléfono [{empleado._numero}]: ").strip()
+                numero = validar_telefono(num_in) if num_in else empleado._numero
+                
+                cor_in = input(f"Correo [{empleado._correo}]: ").strip()
+                correo = validar_correo(cor_in, 80) if cor_in else empleado._correo
+                
+                fec_in = input(f"Fecha contrato [{empleado._fecha_contrato}] (YYYY-MM-DD): ").strip()
+                fecha = date.fromisoformat(validar_fecha_YYYY_MM_DD(fec_in)) if fec_in else empleado._fecha_contrato
+                
+                sal_in = input(f"Salario [{empleado._salario}]: ").strip()
+                salario = validar_salario(sal_in) if sal_in else empleado._salario
+                
+                car_in = input(f"Cargo [{empleado._cargo}]: ").strip()
+                cargo = validar_texto_longitud(car_in, 40, "Cargo") if car_in else empleado._cargo
+
+                actualizado = Empleado(
+                    nombre=nombre,
+                    direccion=direccion,
+                    numero=numero,
+                    correo=correo,
+                    fecha_contrato=fecha,
+                    salario=salario,
+                    cargo=cargo,
+                    id=empleado._id
+                )
+                if EmpleadoDAO.actualizar(actualizado):
+                    print("\nEmpleado actualizado correctamente.")
+                else:
+                    print("\nNo se detectaron cambios guardados.")
+            except Exception as error:
+                print("\nError al actualizar el empleado:", error)
+
+        elif opcion == "5":
+            try:
+                id_empleado = pedir_dato("ID del empleado a eliminar: ", lambda v: validar_entero_positivo(v, "ID Empleado"))
+                empleado = EmpleadoDAO.buscar_por_id(id_empleado)
+                if empleado is None:
+                    print("Empleado no encontrado.")
+                    input("\nPresione Enter para continuar...")
+                    continue
+                print(empleado.mostrar_datos())
+                confirmar = input("Confirmar eliminación (s/n): ").lower().strip()
+                if confirmar == "s":
+                    if EmpleadoDAO.eliminar(id_empleado):
+                        print("Empleado eliminado.")
+                    else:
+                        print("No se pudo eliminar el empleado.")
+                else:
+                    print("Eliminación cancelada.")
+            except Exception as error:
+                print("Error al eliminar el empleado:", error)
+
+        elif opcion == "0":
+            return
         else:
-            print("Opcion no valida.")
-            input("Presione Enter para continuar...")
-            limpiar_pantalla()
+            print("Opción no válida.")
+        input("\nPresione Enter para continuar...")

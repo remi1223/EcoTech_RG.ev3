@@ -1,10 +1,16 @@
-from complementos.complementos import limpiar_pantalla
 from datetime import date
 from dominio.registroTiempo import RegistroTiempo
 from persistencia.empleado_dao import EmpleadoDAO
 from persistencia.proyecto_dao import ProyectoDao
 from persistencia.registroTiempo_dao import RegistroTiempoDAO
 from menus.menu_registroTiempo import main_RegistroTiempo
+from complementos.complementos import (
+    limpiar_pantalla,
+    validar_entero_positivo,
+    validar_fecha_YYYY_MM_DD,
+    validar_texto_longitud
+)
+from entradas import pedir_dato
 
 
 def menu_dominio_registro_tiempo():
@@ -16,9 +22,9 @@ def menu_dominio_registro_tiempo():
         print("3. Ver registros de un empleado")
         print("4. Ver registros de un proyecto")
         print("5. Gestionar registros de tiempo (CRUD)")
-        print("0. Volver al menu principal")
+        print("0. Volver al menú principal")
 
-        opcion = input("Seleccione una opcion: ")
+        opcion = input("Seleccione una opción: ").strip()
         limpiar_pantalla()
 
         if opcion == "0":
@@ -29,14 +35,14 @@ def menu_dominio_registro_tiempo():
 
         if opcion == "1":
             try:
-                id_empleado = int(input("ID del empleado: "))
+                id_empleado = pedir_dato("ID del empleado: ", lambda v: validar_entero_positivo(v, "ID Empleado"))
                 empleado = EmpleadoDAO.buscar_por_id(id_empleado)
                 if empleado is None:
                     print("Empleado no encontrado.")
                     input("\nPresione Enter para continuar...")
                     continue
 
-                id_proyecto = int(input("ID del proyecto: "))
+                id_proyecto = pedir_dato("ID del proyecto: ", lambda v: validar_entero_positivo(v, "ID Proyecto"))
                 proyecto = ProyectoDao.buscar_por_id(id_proyecto)
                 if proyecto is None:
                     print("Proyecto no encontrado.")
@@ -44,24 +50,20 @@ def menu_dominio_registro_tiempo():
                     continue
 
                 if not RegistroTiempoDAO.empleado_asignado(empleado._id, proyecto._id_proyecto):
-                    print("El empleado no esta asignado a ese proyecto.")
+                    print("El empleado no está asignado a ese proyecto.")
                     input("\nPresione Enter para continuar...")
                     continue
 
-                horas = int(input("Horas trabajadas: "))
+                horas = pedir_dato("Horas trabajadas: ", lambda v: validar_entero_positivo(v, "Horas trabajadas"))
                 if horas <= 0:
                     print("Las horas deben ser mayores que cero.")
                     input("\nPresione Enter para continuar...")
                     continue
 
-                fecha = date.fromisoformat(
-                    input("Fecha trabajada (AAAA-MM-DD): ").strip()
-                )
-                descripcion = input("Descripcion de la tarea: ").strip()
-                if descripcion == "":
-                    print("La descripcion no puede quedar vacia.")
-                    input("\nPresione Enter para continuar...")
-                    continue
+                fecha_str = pedir_dato("Fecha trabajada (YYYY-MM-DD): ", validar_fecha_YYYY_MM_DD)
+                fecha = date.fromisoformat(fecha_str)
+
+                descripcion = pedir_dato("Descripción de la tarea (máx 200 caracteres): ", lambda v: validar_texto_longitud(v, 200, "Descripción de la tarea"))
 
                 registro = RegistroTiempo(
                     horas_trabajadas=horas,
@@ -76,10 +78,8 @@ def menu_dominio_registro_tiempo():
                 else:
                     print("No se pudo guardar el registro.")
 
-            except ValueError as error:
-                print("Datos incorrectos:", error)
             except Exception as error:
-                print("Ocurrio un error:", error)
+                print("Ocurrió un error:", error)
 
         elif opcion == "2":
             try:
@@ -101,7 +101,7 @@ def menu_dominio_registro_tiempo():
 
         elif opcion == "3":
             try:
-                id_empleado = int(input("ID del empleado: "))
+                id_empleado = pedir_dato("ID del empleado: ", lambda v: validar_entero_positivo(v, "ID Empleado"))
                 empleado = EmpleadoDAO.buscar_por_id(id_empleado)
                 if empleado is None:
                     print("Empleado no encontrado.")
@@ -130,14 +130,12 @@ def menu_dominio_registro_tiempo():
                 else:
                     print("Este empleado no tiene registros.")
 
-            except ValueError as error:
-                print("Datos incorrectos:", error)
             except Exception as error:
-                print("Ocurrio un error:", error)
+                print("Ocurrió un error:", error)
 
         elif opcion == "4":
             try:
-                id_proyecto = int(input("ID del proyecto: "))
+                id_proyecto = pedir_dato("ID del proyecto: ", lambda v: validar_entero_positivo(v, "ID Proyecto"))
                 proyecto = ProyectoDao.buscar_por_id(id_proyecto)
                 if proyecto is None:
                     print("Proyecto no encontrado.")
@@ -168,11 +166,9 @@ def menu_dominio_registro_tiempo():
                 else:
                     print("Este proyecto no tiene registros.")
 
-            except ValueError as error:
-                print("Datos incorrectos:", error)
             except Exception as error:
-                print("Ocurrio un error:", error)
+                print("Ocurrió un error:", error)
 
         else:
-            print("Opcion no valida.")
+            print("Opción no válida.")
         input("\nPresione Enter para continuar...")
