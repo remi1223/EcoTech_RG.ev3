@@ -2,7 +2,7 @@ import os
 import re
 
 def limpiar_pantalla():
-    os.system("cls")
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def validar_texto_longitud(texto: str, max_longitud: int = 50, campo: str = "Texto") -> str:
 
@@ -65,7 +65,7 @@ def validar_salario(salario_str: str, min_salario: float = 0.0, max_salario: flo
         raise ValueError(f"El salario ingresado excede el límite permitido (${max_salario:,.2f}).")
     return salario
 
-def validar_fecha_YYYY_MM_DD(fecha_str: str) -> str:
+def validar_fecha_DD_MM_YYYY(fecha_str: str) -> str:
     from datetime import datetime
     fecha_limpia = fecha_str.strip()
     try:

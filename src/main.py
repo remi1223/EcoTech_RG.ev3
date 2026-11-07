@@ -1,18 +1,70 @@
+import os
+import sys
+from getpass import getpass
+
+directorio_actual = os.path.dirname(os.path.abspath(__file__))
+directorio_raiz = os.path.dirname(directorio_actual)
+
+for ruta in [directorio_actual, directorio_raiz]:
+    if ruta not in sys.path:
+        sys.path.insert(0, ruta)
+
+from persistencia.crear_bd import crear_tablas
+
+try:
+    from persistencia.UsuarioDAO import UsuarioDAO
+except ImportError:
+    from persistencia.UsuarioDAO import UsuarioDAO
+
+try:
+    from persistencia.semilla_db import poblar_base_datos
+except ImportError:
+    try:
+        from persistencia.semilla_db import crear_admin_inicial as poblar_base_datos
+    except ImportError:
+        def poblar_base_datos():
+            pass
+
 from complementos.complementos import limpiar_pantalla
 from dominio.Gestion_departamento import GestionDepartamento
 from dominio.gestionPermisos import GestionPermisos
 
 from menus.menu_dominio_departamento import menu_dominio_departamento
 from menus.menu_dominio_empleado import main_empleado
-from menus.menu_dominio_gestionDepartamento import (
-    menu_dominio_gestionDepartamento,
-)
+from menus.menu_dominio_gestionDepartamento import menu_dominio_gestionDepartamento
 from menus.menu_dominio_gestionPermisos import menu_dominio_gestionPermisos
 from menus.menu_dominio_proyecto import main_proyecto
 from menus.menu_dominio_registroTiempo import menu_dominio_registro_tiempo
 from menus.menu_dominio_usuario import menu_dominio_usuario
-from persistencia.crear_bd import crear_tablas
-from persistencia.UsuarioDAO import UsuarioDAO
+from menus.menu_gestion_admin import menu_gestion_admin  
+from menus.menu_api import menu_api 
+
+
+def iniciar_sesion(usuario_dao: UsuarioDAO):
+    """Solicita credenciales y autentica al usuario antes de permitir el acceso al menú."""
+    intentos = 3
+    while intentos > 0:
+        limpiar_pantalla()
+        print("===========================================")
+        print("   INICIO DE SESIÓN - ECOTECH SOLUTIONS   ")
+        print("===========================================\n")
+        
+        username = input("Nombre de usuario: ").strip()
+        contrasenia = getpass("Contraseña: ").strip()
+
+        usuario = usuario_dao.obtener_por_nombre(username)
+
+        if usuario and usuario.autenticar(contrasenia):
+            print(f"\n¡Autenticación exitosa! Bienvenido/a, {usuario.nombre_usuario}.")
+            input("Presione Enter para ingresar al sistema...")
+            return usuario
+        else:
+            intentos -= 1
+            print(f"\nUsuario o contraseña incorrectos. Intentos restantes: {intentos}")
+            input("Presione Enter para intentar nuevamente...")
+
+    print("\nHas superado el número máximo de intentos. Cerrando la aplicación...")
+    return None
 
 
 def main():
@@ -20,9 +72,13 @@ def main():
     gestion_permisos = GestionPermisos()
     gestion_departamentos = GestionDepartamento()
 
+    usuario_logueado = iniciar_sesion(usuario_dao)
+    if not usuario_logueado:
+        return
+
     while True:
         limpiar_pantalla()
-        print("\n===== ECOTECH SOLUTIONS =====")
+        print(f"\n===== ECOTECH SOLUTIONS | Sesión: {usuario_logueado.nombre_usuario} =====")
         print("1. Empleado")
         print("2. Departamento")
         print("3. Proyecto")
@@ -30,7 +86,9 @@ def main():
         print("5. Usuario (demostración)")
         print("6. Gestión de Permisos (demostración)")
         print("7. Gestión de Departamento (demostración)")
-        print("0. Salir")
+        print("8. Gestión Administración")
+        print("9. Indicadores y Divisas (API)")
+        print("0. Salir / Cerrar Sesión")
 
         opcion = input("\nSeleccione una opción: ").strip()
 
@@ -56,12 +114,18 @@ def main():
             elif opcion == "7":
                 limpiar_pantalla()
                 menu_dominio_gestionDepartamento(gestion_departamentos)
+            elif opcion == "8":
+                limpiar_pantalla()
+                menu_gestion_admin(usuario_logueado) 
+            elif opcion == "9":
+                limpiar_pantalla()
+                menu_api() 
             elif opcion == "0":
                 limpiar_pantalla()
-                print("¡Hasta luego! Gracias por usar EcoTech Solutions.")
+                print("Sesión cerrada. ¡Hasta luego!")
                 break
             else:
-                print("\nOpción no válida. Ingrese un número del 0 al 7.")
+                print("\nOpción no válida. Ingrese un número del 0 al 9.")
                 input("Presione Enter para continuar...")
         except Exception as error:
             print(f"\nOcurrió un error inesperado en la navegación: {error}")
@@ -71,6 +135,9 @@ def main():
 if __name__ == "__main__":
     try:
         crear_tablas()
+        dao_check = UsuarioDAO("ecotech.db")
+        if not dao_check.obtener_todos():
+            poblar_base_datos()
     except Exception as error:
         print("Error al preparar la base de datos:", error)
     else:

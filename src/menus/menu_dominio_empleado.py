@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import datetime, date
 from complementos.complementos import (
     limpiar_pantalla,
     validar_correo,
     validar_entero_positivo,
-    validar_fecha_YYYY_MM_DD,
+    validar_fecha_DD_MM_YYYY,
     validar_nombre,
     validar_salario,
     validar_telefono,
@@ -50,9 +50,12 @@ def main_empleado():
                 )
 
                 fecha_str = pedir_dato(
-                    "Fecha de contrato (YYYY-MM-DD): ", validar_fecha_YYYY_MM_DD
+                    "Fecha de contrato (DD-MM-YYYY): ", validar_fecha_DD_MM_YYYY
                 )
-                fecha_contrato = date.fromisoformat(fecha_str)
+                try:
+                    fecha_contrato = datetime.strptime(fecha_str, "%d-%m-%Y").date()
+                except ValueError:
+                    raise ValueError("La fecha ingresada no es válida. Use DD-MM-YYYY.")
 
                 salario = pedir_dato("Salario: ", validar_salario)
                 cargo = pedir_dato(
@@ -144,13 +147,16 @@ def main_empleado():
                 )
 
                 fec_in = input(
-                    f"Fecha contrato [{empleado._fecha_contrato}] (YYYY-MM-DD): "
+                    f"Fecha contrato [{empleado._fecha_contrato}] (DD-MM-YYYY): "
                 ).strip()
-                fecha = (
-                    date.fromisoformat(validar_fecha_YYYY_MM_DD(fec_in))
-                    if fec_in
-                    else empleado._fecha_contrato
-                )
+                
+                if fec_in:
+                    try:
+                        fecha = datetime.strptime(fec_in, "%d-%m-%Y").date()
+                    except ValueError:
+                        raise ValueError("Formato de fecha inválido. Use DD-MM-YYYY.")
+                else:
+                    fecha = empleado._fecha_contrato
 
                 sal_in = input(f"Salario [{empleado._salario}]: ").strip()
                 salario = (

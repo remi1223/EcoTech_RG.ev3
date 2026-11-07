@@ -2,7 +2,7 @@ from datetime import date
 from complementos.complementos import (
     limpiar_pantalla,
     validar_entero_positivo,
-    validar_fecha_YYYY_MM_DD,
+    validar_fecha_DD_MM_YYYY,
     validar_texto_longitud,
 )
 from dominio.proyecto import Proyecto
@@ -34,7 +34,7 @@ def main_proyecto():
                     lambda v: validar_texto_longitud(v, 60, "Nombre"),
                 )
                 fecha_str = pedir_dato(
-                    "Fecha de inicio (YYYY-MM-DD): ", validar_fecha_YYYY_MM_DD
+                    "Fecha de inicio (DD-MM-YYYY): ", validar_fecha_DD_MM_YYYY
                 )
                 fecha_inicio = date.fromisoformat(fecha_str)
                 descripcion = pedir_dato(
@@ -100,10 +100,10 @@ def main_proyecto():
                 )
 
                 fec_in = input(
-                    f"Fecha de inicio [{p._fecha_inicio}] (YYYY-MM-DD): "
+                    f"Fecha de inicio [{p._fecha_inicio}] (DD-MM-YYYY): "
                 ).strip()
                 fecha = (
-                    date.fromisoformat(validar_fecha_YYYY_MM_DD(fec_in))
+                    date.fromisoformat(validar_fecha_DD_MM_YYYY(fec_in))
                     if fec_in
                     else p._fecha_inicio
                 )

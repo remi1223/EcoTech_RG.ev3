@@ -7,7 +7,7 @@ from menus.menu_registroTiempo import main_RegistroTiempo
 from complementos.complementos import (
     limpiar_pantalla,
     validar_entero_positivo,
-    validar_fecha_YYYY_MM_DD,
+    validar_fecha_DD_MM_YYYY,
     validar_texto_longitud
 )
 from entradas import pedir_dato
@@ -60,7 +60,7 @@ def menu_dominio_registro_tiempo():
                     input("\nPresione Enter para continuar...")
                     continue
 
-                fecha_str = pedir_dato("Fecha trabajada (YYYY-MM-DD): ", validar_fecha_YYYY_MM_DD)
+                fecha_str = pedir_dato("Fecha trabajada (DD-MM-YYYY): ", validar_fecha_DD_MM_YYYY)
                 fecha = date.fromisoformat(fecha_str)
 
                 descripcion = pedir_dato("Descripción de la tarea (máx 200 caracteres): ", lambda v: validar_texto_longitud(v, 200, "Descripción de la tarea"))
